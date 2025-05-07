@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Система Оценок</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/tailwindcss@2.1.2/dist/tailwind.min.css"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="bg-gray-100">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+            <h1 class="text-3xl font-bold text-center mb-4">Система Оценок</h1>
+
+            <div class="mb-6 overflow-x-auto">
+                <table
+                    class="min-w-full table-auto"
+                    id="gradesTable"
+                    data-semester="{{ config.get_semester() }}"
+                >
+                    <thead>
+                        <tr>
+                            <th
+                                class="px-4 py-2 cursor-pointer"
+                                onclick="sortTable(0)"
+                            >
+                                Предмет
+                            </th>
+                            <th
+                                class="px-4 py-2 cursor-pointer"
+                                onclick="sortTable(1)"
+                            >
+                                1-й семестр
+                            </th>
+                            <th
+                                class="px-4 py-2 cursor-pointer"
+                                onclick="sortTable(2)"
+                            >
+                                2-й семестр
+                            </th>
+                            <th
+                                class="px-4 py-2 cursor-pointer"
+                                onclick="sortTable(3)"
+                            >
+                                Годовой
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for subject in data.subjects %}
+                        <tr>
+                            <td class="border px-4 py-2">{{ subject.name }}</td>
+                            <td class="border px-4 py-2">
+                                {% set avg1 = subject.avg_by_semester(1) %} {%
+                                if avg1 > 0 %}
+                                <span
+                                    class="px-2 py-1 rounded {% if avg1 < 3.5 %}bg-red-500 text-white {% elif avg1 <= 6.0 %}bg-yellow-500 text-white {% else %}bg-green-500 text-white {% endif %}"
+                                >
+                                    {{ avg1 | round(1) }}
+                                </span>
+                                {% else %} - {% endif %}
+                            </td>
+                            <td class="border px-4 py-2">
+                                {% set avg2 = subject.avg_by_semester(2) %} {%
+                                if avg2 > 0 %}
+                                <span
+                                    class="px-2 py-1 rounded {% if avg2 < 3.5 %}bg-red-500 text-white {% elif avg2 <= 6.0 %}bg-yellow-500 text-white {% else %}bg-green-500 text-white {% endif %}"
+                                >
+                                    {{ avg2 | round(1) }}
+                                </span>
+                                {% else %} - {% endif %}
+                            </td>
+                            <td class="border px-4 py-2">
+                                {% set avg_year = subject.avg_year() %} {% if
+                                avg_year > 0 %}
+                                <span
+                                    class="px-2 py-1 rounded {% if avg_year < 3.5 %}bg-red-500 text-white {% elif avg_year <= 6.0 %}bg-yellow-500 text-white {% else %}bg-green-500 text-white {% endif %}"
+                                >
+                                    {{ avg_year | round(1) }}
+                                </span>
+                                {% else %} Нет оценки {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-between gap-2">
+                <button
+                    onclick="toggleModal(true)"
+                    class="bg-blue-500 text-white px-4 py-2 rounded"
+                >
+                    Добавить Оценку
+                </button>
+                <a
+                    href="{{ url_for('settings') }}"
+                    class="text-center bg-green-500 text-white px-4 py-2 rounded"
+                    >Настройки</a
+                >
+            </div>
+
+            <div
+                id="gradeModal"
+                class="fixed inset-0 bg-black bg-opacity-40 items-center justify-center px-2 sm:px-0 hidden"
+            >
+                <div class="bg-white p-6 rounded w-full max-w-md">
+                    <h2 class="text-xl font-bold mb-4">Добавить Оценку</h2>
+                    <form id="gradeForm">
+                        <div class="mb-4">
+                            <label class="block mb-1">Предмет</label>
+                            <select
+                                name="subject"
+                                class="w-full border p-2 rounded"
+                                required
+                            >
+                                {% for subject in data.subjects %}
+                                <option value="{{ subject.name }}">
+                                    {{ subject.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block mb-1">Оценка</label>
+                            <input
+                                name="grade"
+                                type="number"
+                                min="1"
+                                max="10"
+                                class="w-full border p-2 rounded"
+                                required
+                            />
+                        </div>
+                        <div class="mb-4">
+                            <label class="block mb-1">Дата (ДД-ММ-ГГГГ)</label>
+                            <input
+                                name="date"
+                                type="text"
+                                class="w-full border p-2 rounded"
+                                required
+                            />
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button
+                                type="button"
+                                onclick="toggleModal(false)"
+                                class="px-4 py-2 bg-gray-300 rounded"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                type="submit"
+                                class="px-4 py-2 bg-blue-500 text-white rounded"
+                            >
+                                Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <script>
+            function sortTable(columnIndex) {
+                const table = document.getElementById("gradesTable");
+                const rows = Array.from(table.rows).slice(1); // Получаем все строки таблицы, кроме заголовка
+                const isNumeric = columnIndex !== 0; // Если это не первый столбец, то сортируем числовые значения
+
+                rows.sort((rowA, rowB) => {
+                    const cellA = rowA.cells[columnIndex].innerText.trim();
+                    const cellB = rowB.cells[columnIndex].innerText.trim();
+
+                    // Сортировка для строк
+                    if (!isNumeric) {
+                        return cellA.localeCompare(cellB);
+                    }
+
+                    // Сортировка для чисел (обрабатываем пустые значения)
+                    const numA = parseFloat(cellA) || -Infinity; // Если нет числа, считаем, что это наименьшее значение
+                    const numB = parseFloat(cellB) || -Infinity;
+
+                    return numB - numA;
+                });
+
+                // Перемещаем отсортированные строки обратно в таблицу
+                rows.forEach((row) => table.appendChild(row));
+            }
+
+            function toggleModal(show) {
+                document
+                    .getElementById("gradeModal")
+                    .classList.toggle("hidden", !show);
+            }
+
+            document
+                .getElementById("gradeForm")
+                .addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    const form = e.target;
+                    const data = new FormData(form);
+                    const res = await fetch("/add_grade", {
+                        method: "POST",
+                        body: data,
+                    });
+                    if (res.ok) {
+                        toggleModal(false);
+                        location.reload();
+                    } else {
+                        alert("Ошибка при добавлении оценки");
+                    }
+                });
+
+            document.addEventListener("DOMContentLoaded", () => {
+                const table = document.getElementById("gradesTable");
+                const semester = parseInt(table.dataset.semester, 10);
+                if ([1, 2].includes(semester)) {
+                    sortTable(semester); // колонка 1 или 2 (0-based)
+                }
+            });
+        </script>
+    </body>
+</html>
