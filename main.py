@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from flask import Flask, redirect, render_template, request, url_for
@@ -30,10 +30,10 @@ def add_grade():
     if request.method == "POST":
         subject_name = request.form["subject"]
         grade = int(request.form["grade"])
-        try:
-            grade_date = datetime.strptime(request.form["date"], "%d-%m-%Y").date()
-        except ValueError:
-            return "Invalid date format"
+        date_str = request.form.get("date")
+        grade_date = (
+            datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else date.today()
+        )
 
         subject = next(s for s in data.subjects if s.name == subject_name)
         subject.grades.append(
