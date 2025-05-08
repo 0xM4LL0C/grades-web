@@ -1,7 +1,7 @@
 from datetime import date
 
 
-def get_mid(seq: list[int]) -> float:
+def get_mid(seq: list[int | float]) -> float:
     return sum(seq) / len(seq) if seq else 0.0
 
 

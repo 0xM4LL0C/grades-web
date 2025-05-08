@@ -63,7 +63,12 @@ class Subject(Base):
         return get_mid([g.grade for g in self.grades if g.semester == semester])
 
     def avg_year(self) -> float:
-        return get_mid([g.grade for g in self.grades])
+        return get_mid(
+            [
+                self.avg_by_semester(1),
+                self.avg_by_semester(2),
+            ]
+        )
 
 
 @dataclass_json
