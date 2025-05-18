@@ -36,10 +36,11 @@ def add_grade():
         )
 
         subject = next(s for s in data.subjects if s.name == subject_name)
-        subject.grades.append(
-            Grade(grade=grade, date=grade_date, semester=config.get_semester())
-        )
-        data.save("data.json")
+        if not any(g.date == grade_date for g in subject.grades):
+            subject.grades.append(
+                Grade(grade=grade, date=grade_date, semester=config.get_semester())
+            )
+            data.save("data.json")
         return redirect(url_for("index"))
     return render_template("add_grade.html", data=data)
 
